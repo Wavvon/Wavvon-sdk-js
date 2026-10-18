@@ -7,7 +7,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     languageOptions: {
-      globals: { console: "readonly", process: "readonly", fetch: "readonly", URL: "readonly", Buffer: "readonly", setTimeout: "readonly", clearTimeout: "readonly", AbortSignal: "readonly", Request: "readonly", Response: "readonly", Headers: "readonly", TextEncoder: "readonly", TextDecoder: "readonly", WebSocket: "readonly" },
+      globals: { console: "readonly", process: "readonly", fetch: "readonly", URL: "readonly", Buffer: "readonly", setTimeout: "readonly", clearTimeout: "readonly", setInterval: "readonly", clearInterval: "readonly", atob: "readonly", AbortSignal: "readonly", Request: "readonly", Response: "readonly", Headers: "readonly", TextEncoder: "readonly", TextDecoder: "readonly", WebSocket: "readonly" },
     },
   },
 );

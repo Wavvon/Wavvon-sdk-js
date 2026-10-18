@@ -1,5 +1,4 @@
 import type { components } from "./generated/schema.js";
-import type { Embed, GameLaunchCard } from "./webhooks.js";
 import { backoffDelay, type RetryOptions } from "./retry.js";
 
 // ---------------------------------------------------------------------------
@@ -8,7 +7,7 @@ import { backoffDelay, type RetryOptions } from "./retry.js";
 // arrives as UnknownEvent with the raw frame.
 // ---------------------------------------------------------------------------
 
-export type Message = components["schemas"]["Message"] & { embeds?: Embed[]; game?: GameLaunchCard };
+export type Message = components["schemas"]["Message"];
 
 /** One envelope for live push, replay and outgoing webhooks (apps.md §5). */
 export interface HubEvent {

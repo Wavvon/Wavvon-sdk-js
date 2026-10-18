@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HubUnavailableError, backoffDelay, fetchWithRetry, isTransientStatus } from "../src/index.js";
+import { AuthSchemeError, HubUnavailableError, backoffDelay, fetchWithRetry, isTransientStatus } from "../src/index.js";
 
 const noSleep = { sleep: async () => {}, random: () => 1 };
 
@@ -38,6 +38,35 @@ describe("retry", () => {
       noSleep,
     );
     expect(await res.text()).toBe("ok");
+  });
+
+  it("retries timeouts", async () => {
+    let n = 0;
+    const res = await fetchWithRetry(
+      async () => {
+        if (n++ < 1) throw new DOMException("timed out", "TimeoutError");
+        return new Response("ok");
+      },
+      {},
+      noSleep,
+    );
+    expect(await res.text()).toBe("ok");
+  });
+
+  it("rethrows non-transport errors without retrying", async () => {
+    for (const err of [new AuthSchemeError("unknown scheme"), new RangeError("bug")]) {
+      let calls = 0;
+      const p = fetchWithRetry(
+        async () => {
+          calls++;
+          throw err;
+        },
+        {},
+        noSleep,
+      );
+      await expect(p).rejects.toBe(err);
+      expect(calls).toBe(1);
+    }
   });
 
   it("never returns a transient failure as the answer", async () => {

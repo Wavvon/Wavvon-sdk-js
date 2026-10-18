@@ -25,9 +25,8 @@ GitHub Actions workflow files: explain choices in the commit message.
 1. **Generated REST** - `src/generated/schema.d.ts`, from Wavvon-docs
    `openapi.yaml` by `scripts/generate.mjs` (openapi-typescript). Committed.
    `src/generated/SPEC_COMMIT` records the docs commit; `-dirty` means local
-   edits, `+Name` means the generator patched in a schema the spec references
-   but never defines (`SPEC_GAPS` in the script; delete the entry once the
-   spec is fixed). Never edit the generated file by hand.
+   edits. The spec is used as-is: a gap in it is fixed in Wavvon-docs, not
+   patched here. Never edit the generated file by hand.
 2. **Hand-written core** - `src/`:
    - `auth.ts` challenge rules and login; `retry.ts` backoff; `client.ts`
      `WavvonClient` (openapi-fetch with a custom fetch that adds the bearer,

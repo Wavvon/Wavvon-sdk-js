@@ -192,8 +192,7 @@ export class WavvonClient {
   /** GET /me/events: the polling transport, for a program that holds no socket. */
   async pollEvents(since?: number): Promise<PolledEvent[]> {
     const res = ok(await this.rest.GET("/me/events", { params: { query: since === undefined ? {} : { since } } }));
-    const rows = (res as { events?: { id: string; event_type: string; payload: string; created_at: number }[] })
-      .events;
+    const rows = res.events;
     if (!Array.isArray(rows)) throw new HubError(200, "GET /me/events answered without an events array");
     return rows.map((r) => ({ ...r, payload: parsePayload(r.payload) }));
   }

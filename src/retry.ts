@@ -1,4 +1,4 @@
-import { HubUnavailableError } from "./errors.js";
+import { HubUnavailableError, WavvonError } from "./errors.js";
 
 export interface RetryOptions {
   /** Attempts before giving up with HubUnavailableError. Infinity keeps trying. Default 8. */
@@ -37,6 +37,18 @@ export function backoffDelay(attempt: number, opts: RetryOptions = {}, random = 
   return Math.floor(random() * Math.min(max, base * 2 ** (attempt - 1)));
 }
 
+/**
+ * A thrown error worth another attempt: fetch rejects with a TypeError on a
+ * network failure, and our per-attempt timeout aborts with "TimeoutError".
+ * Anything else (an SDK error such as AuthSchemeError, a bug) is rethrown.
+ */
+export function isTransientError(e: unknown): boolean {
+  if (e instanceof WavvonError) return false;
+  // ponytail: a programming TypeError also looks like a network failure; fetch gives nothing finer.
+  if (e instanceof TypeError) return true;
+  return (e as { name?: unknown } | null)?.name === "TimeoutError";
+}
+
 const realSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
@@ -66,6 +78,7 @@ export async function fetchWithRetry(
       status = res.status;
       await res.body?.cancel().catch(() => {});
     } catch (e) {
+      if (!isTransientError(e)) throw e;
       error = e;
     }
     lastStatus = status;

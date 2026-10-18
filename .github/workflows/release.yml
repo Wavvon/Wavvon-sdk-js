@@ -50,7 +50,7 @@ jobs:
           if npm view "@wavvon/sdk@${{ steps.ver.outputs.version }}" version >/dev/null 2>&1; then
             echo "@wavvon/sdk@${{ steps.ver.outputs.version }} is already on npm"
           else
-            npm publish --provenance
+            npm stage publish --provenance
           fi
       - if: steps.tag.outputs.exists == 'false'
         env:

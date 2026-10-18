@@ -1,0 +1,52 @@
+{
+  "name": "@wavvon/sdk",
+  "version": "0.1.0",
+  "description": "Write programs (bots and apps) that talk to a Wavvon hub.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wavvon/Wavvon-sdk-js.git"
+  },
+  "homepage": "https://github.com/Wavvon/Wavvon-docs/blob/main/docs/sdk.md",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "build": "node scripts/build.mjs",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "smoke": "node test/smoke.mjs",
+    "smoke:local": "node scripts/smoke-local.mjs"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.19.43",
+    "eslint": "^10.13.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^3.2.7"
+  }
+}

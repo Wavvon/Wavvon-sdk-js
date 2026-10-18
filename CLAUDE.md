@@ -92,3 +92,13 @@ socket or webhooks.
 ## Git
 
 Work on `develop`; `main` is for releases. Commit in logical steps.
+
+## Releasing
+
+Bump `version` in `package.json` on `develop`, open a PR from `develop` to
+`main`; a maintainer merges it. `.github/workflows/release.yml` then runs on
+`main`: if tag `v<version>` does not exist yet it runs the full check,
+publishes to npm with provenance through npm trusted publishing (no token
+stored; the trusted publisher is configured on the package's npm settings
+page), tags the commit and creates the GitHub release. A version already on
+npm is not republished, only tagged.

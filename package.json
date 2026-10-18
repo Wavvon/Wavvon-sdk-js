@@ -1,6 +1,6 @@
 {
   "name": "@wavvon/sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Write programs (bots and apps) that talk to a Wavvon hub.",
   "license": "Apache-2.0",
   "type": "module",
@@ -13,7 +13,8 @@
     "node": ">=20"
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -33,7 +34,8 @@
     "build": "node scripts/build.mjs",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "smoke": "node test/smoke.mjs",
-    "smoke:local": "node scripts/smoke-local.mjs"
+    "smoke:local": "node scripts/smoke-local.mjs",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@noble/curves": "^2.4.0",
@@ -48,5 +50,8 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.2",
     "vitest": "^3.2.7"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

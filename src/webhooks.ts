@@ -6,6 +6,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { concatBytes, constantTimeEqual, hexToBytes, u64le, utf8 } from "./bytes.js";
 import { WebhookVerificationError } from "./errors.js";
 import type { HubEvent } from "./events.js";
+import type { components } from "./generated/schema.js";
 
 // ---------------------------------------------------------------------------
 // Wire shapes (Wavvon-server crates/hub/src/routes/app_models.rs)
@@ -46,16 +47,7 @@ export interface UnknownDispatch {
 
 export type Dispatch = SlashInvocation | ComponentInteraction | UnknownDispatch;
 
-export interface Embed {
-  title?: string;
-  url?: string;
-  description?: string;
-  color?: string;
-  fields?: { name: string; value: string; inline?: boolean }[];
-  thumbnail_url?: string;
-  image_url?: string;
-  footer?: { text: string };
-}
+export type Embed = components["schemas"]["Embed"];
 
 export interface AppComponent {
   type: "button" | "select";
@@ -74,12 +66,7 @@ export interface ComponentRow {
   components: AppComponent[];
 }
 
-export interface GameLaunchCard {
-  entry_url: string;
-  name: string;
-  description?: string;
-  thumbnail_url?: string;
-}
+export type GameLaunchCard = components["schemas"]["GameLaunchCard"];
 
 /** What a slash command handler answers. */
 export interface AppResponse {

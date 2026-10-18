@@ -44,6 +44,8 @@ const hub = spawn(bin, [], {
   env: {
     ...process.env,
     WAVVON_DATABASE_URL: `${pg}/${db}`,
+    // The bot's webhook receiver listens on localhost.
+    WAVVON_ALLOW_PRIVATE_WEBHOOKS: "true",
     WAVVON_HTTP_PORT: String(httpPort),
     WAVVON_VOICE_UDP_PORT: String(httpPort + 1),
     WAVVON_PUBLIC_URL: hubUrl,

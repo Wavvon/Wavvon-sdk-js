@@ -61,7 +61,7 @@ A fuller one is [examples/echo-bot.mjs](examples/echo-bot.mjs).
 | Capability checks | `client.hasCapability`, `client.requireCapability` |
 | Keyset paging to the end of a list | `paginate` |
 | WebSocket events with resume after reconnect | `client.connect()` -> `EventStream` |
-| HTTP polling instead of a socket | `client.pollEvents`, `client.ackEvents` |
+| HTTP polling instead of a socket | `client.pollEvents(cursor)` |
 | App registration | `setAppProfile`, `setAppCommands`, `setAppSubscriptions` |
 | Slash command and button webhooks | `createDispatchHandler`, `verifyDispatch` |
 | Outgoing webhook receiver | `verifyOutgoingWebhook` |

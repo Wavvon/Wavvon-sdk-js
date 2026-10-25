@@ -43,6 +43,21 @@ export class AuthSchemeError extends WavvonError {
   override name = "AuthSchemeError";
 }
 
+/**
+ * A poll cursor is older than the hub's 72-hour window: events after it were
+ * missed and cannot be replayed. Resynchronise from REST, then poll from
+ * `earliestSeq - 1` or without a cursor.
+ */
+export class ReplayUnavailableError extends WavvonError {
+  override name = "ReplayUnavailableError";
+  constructor(
+    readonly earliestSeq: number,
+    readonly earliestAt: number,
+  ) {
+    super(`events before seq ${earliestSeq} are outside the hub's replay window`);
+  }
+}
+
 /** A webhook request failed verification; answer it with 401 and do nothing. */
 export class WebhookVerificationError extends WavvonError {
   override name = "WebhookVerificationError";

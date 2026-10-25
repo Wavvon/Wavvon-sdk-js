@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HubUnavailableError, UnsupportedByHubError, WavvonClient } from "../src/index.js";
+import { HubUnavailableError, ReplayUnavailableError, UnsupportedByHubError, WavvonClient } from "../src/index.js";
 
 const seed = "02".repeat(32);
 
@@ -22,6 +22,12 @@ function fakeHub(capabilities: string[]) {
     if (req.headers.get("authorization") !== `Bearer ${valid}`) return new Response("expired", { status: 401 });
     if (path === "/channels" && flaky-- > 0) return new Response(null, { status: 429 });
     if (path === "/me/app/commands") return new Response(null, { status: 200 });
+    if (path === "/me/events") {
+      const cursor = new URL(req.url).searchParams.get("cursor");
+      log.push(`cursor=${cursor}`);
+      if (cursor === "1") return Response.json({ type: "replay_unavailable", earliest_seq: 40, earliest_at: 9 }, { status: 410 });
+      return Response.json([{ type: "hub_event", seq: 42, event: "member.joined", hub_url: "http://hub", at: 1, payload: {}, replayed: true }]);
+    }
     return Response.json([{ id: "c1", name: "general" }]);
   }) as typeof fetch;
   return {
@@ -63,5 +69,16 @@ describe("WavvonClient", () => {
     const withCap = new WavvonClient({ hubUrl: "http://hub", seed, fetch: hub.fetchImpl });
     await withCap.setAppCommands([{ name: "echo", description: "Echo" }]);
     expect(hub.log).toContain("PUT /me/app/commands");
+  });
+
+  it("polls hub_event envelopes after a cursor and reports a cursor outside the window", async () => {
+    const hub = fakeHub([]);
+    const client = new WavvonClient({ hubUrl: "http://hub", seed, fetch: hub.fetchImpl });
+    const events = await client.pollEvents(41);
+    expect(events.map((e) => e.seq)).toEqual([42]);
+    expect(hub.log).toContain("cursor=41");
+    const gone = await client.pollEvents(1).catch((e: unknown) => e);
+    expect(gone).toBeInstanceOf(ReplayUnavailableError);
+    expect((gone as ReplayUnavailableError).earliestSeq).toBe(40);
   });
 });

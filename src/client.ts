@@ -1,7 +1,7 @@
 import createClient, { type Client } from "openapi-fetch";
 import { authenticate, identityFromSeed, type Identity, type Session } from "./auth.js";
-import { HubError, UnsupportedByHubError } from "./errors.js";
-import { EventStream, type EventStreamOptions, type WebSocketCtor } from "./events.js";
+import { HubError, ReplayUnavailableError, UnsupportedByHubError } from "./errors.js";
+import { EventStream, type EventStreamOptions, type HubEvent, type WebSocketCtor } from "./events.js";
 import type { components, paths } from "./generated/schema.js";
 import { fetchWithRetry, type RetryOptions } from "./retry.js";
 
@@ -14,14 +14,6 @@ type Body<P extends keyof paths, M extends "put"> = paths[P][M] extends {
 export type AppProfile = Body<"/me/app/profile", "put">;
 export type AppCommand = Body<"/me/app/commands", "put">["commands"][number];
 export type AppSubscription = Body<"/me/app/subscriptions", "put">["subscriptions"][number];
-
-/** One row of GET /me/events, with `payload` already parsed. */
-export interface PolledEvent {
-  id: string;
-  event_type: string;
-  payload: unknown;
-  created_at: number;
-}
 
 export type SessionState = "signed-out" | "authenticating" | "ready";
 
@@ -189,25 +181,25 @@ export class WavvonClient {
     );
   }
 
-  /** GET /me/events: the polling transport, for a program that holds no socket. */
-  async pollEvents(since?: number): Promise<PolledEvent[]> {
-    const res = ok(await this.rest.GET("/me/events", { params: { query: since === undefined ? {} : { since } } }));
-    const rows = res.events;
-    if (!Array.isArray(rows)) throw new HubError(200, "GET /me/events answered without an events array");
-    return rows.map((r) => ({ ...r, payload: parsePayload(r.payload) }));
-  }
-
-  /** DELETE /me/events: acknowledge polled events so they are not returned again. */
-  async ackEvents(ids: string[]): Promise<void> {
-    ok(await this.rest.DELETE("/me/events", { body: { ids } }));
-  }
-}
-
-function parsePayload(s: string): unknown {
-  try {
-    return JSON.parse(s);
-  } catch {
-    return s;
+  /**
+   * GET /me/events: the polling transport, for a program that holds no socket.
+   * Returns the same hub_event envelopes the socket replays, oldest first.
+   * Nothing is acknowledged: pass the last `seq` you handled as `cursor`.
+   * No cursor starts at the beginning of the hub's 72-hour window. A cursor
+   * older than the window throws ReplayUnavailableError.
+   */
+  async pollEvents(cursor?: number, limit?: number): Promise<HubEvent[]> {
+    const query: { cursor?: number; limit?: number } = {};
+    if (cursor !== undefined) query.cursor = cursor;
+    if (limit !== undefined) query.limit = limit;
+    const res = await this.rest.GET("/me/events", { params: { query } });
+    if (res.response.status === 410 && res.error) {
+      const gone = res.error as { earliest_seq: number; earliest_at: number };
+      throw new ReplayUnavailableError(gone.earliest_seq, gone.earliest_at);
+    }
+    const rows = ok(res);
+    if (!Array.isArray(rows)) throw new HubError(200, "GET /me/events answered without an array");
+    return rows as HubEvent[];
   }
 }
 

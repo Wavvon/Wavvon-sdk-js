@@ -1,5 +1,4 @@
 export {
-  AUTH_CHALLENGE_LEN,
   AUTH_CHALLENGE_SCHEME,
   authChallengeSigningBytes,
   authenticate,

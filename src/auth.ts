@@ -4,8 +4,6 @@ import { AuthSchemeError, HubError } from "./errors.js";
 import { fetchWithRetry, isTransientStatus, type RetryOptions } from "./retry.js";
 
 export const AUTH_CHALLENGE_SCHEME = "tagged-v1";
-/** The only length a raw (untagged) challenge is ever signed at. */
-export const AUTH_CHALLENGE_LEN = 32;
 
 /** A keypair the program holds. The seed never leaves this object. */
 export interface Identity {
@@ -29,23 +27,16 @@ export function identityFromSeed(seed: string | Uint8Array): Identity {
 /**
  * The bytes a client signs to answer a challenge (wire-format.md, "Auth
  * challenge answer"). Named `tagged-v1`: the domain prefix plus the challenge.
- * No scheme (an older hub): the raw challenge, and only at exactly 32 bytes, so
- * this can never be used to sign arbitrary bytes. Any other scheme is refused
+ * Every hub since v0.7.0 names it; a missing or unknown scheme is refused
  * rather than guessed at.
  */
 export function authChallengeSigningBytes(challenge: Uint8Array, scheme?: string | null): Uint8Array {
   if (scheme === AUTH_CHALLENGE_SCHEME) {
     return concatBytes(utf8("wavvon/auth-challenge/v1\0"), challenge);
   }
-  if (scheme === undefined || scheme === null) {
-    if (challenge.length !== AUTH_CHALLENGE_LEN) {
-      throw new AuthSchemeError(
-        `refusing to sign a raw ${challenge.length}-byte challenge; only ${AUTH_CHALLENGE_LEN} bytes are ever signed raw`,
-      );
-    }
-    return challenge;
-  }
-  throw new AuthSchemeError(`unknown auth challenge scheme "${scheme}"`);
+  throw new AuthSchemeError(
+    scheme == null ? "the hub named no auth challenge scheme" : `unknown auth challenge scheme "${scheme}"`,
+  );
 }
 
 export interface Session {

@@ -80,12 +80,10 @@ describe.runIf(present)("tier-1 conformance (wire-vectors.json)", () => {
     expect(bytesToHex(bytes)).toBe(v.signing_bytes);
     expect(identityFromSeed(v.inputs.hub_seed).publicKey).toBe(v.hub_pubkey);
     expect(bytesToHex(ed25519.sign(bytes, hexToBytes(v.inputs.hub_seed)))).toBe(v.signature_v1);
-    expect(bytesToHex(ed25519.sign(body, hexToBytes(v.inputs.hub_seed)))).toBe(v.signature_legacy);
 
     const headers = {
       [v.headers.hub_pubkey]: v.hub_pubkey,
       [v.headers.signature_v1]: v.signature_v1,
-      [v.headers.signature_legacy]: v.signature_legacy,
       [v.headers.timestamp]: String(v.inputs.timestamp),
     };
     expect(verifyDispatch(headers, body, v.hub_pubkey, { now: v.inputs.timestamp }).type).toBe("slash_command");
@@ -103,11 +101,9 @@ describe.runIf(present)("tier-1 conformance (wire-vectors.json)", () => {
     const bytes = webhookDeliverySigningBytes(v.inputs.timestamp, body);
     expect(bytesToHex(bytes)).toBe(v.signing_bytes);
     expect(bytesToHex(hmac(sha256, key, bytes))).toBe(v.signature_v1);
-    expect(bytesToHex(hmac(sha256, key, body))).toBe(v.signature_legacy);
 
     const headers = {
       [v.headers.signature_v1]: v.signature_v1,
-      [v.headers.signature_legacy]: v.signature_legacy,
       [v.headers.timestamp]: String(v.inputs.timestamp),
       [v.headers.webhook_id]: "wh_test",
     };

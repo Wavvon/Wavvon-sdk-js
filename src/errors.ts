@@ -38,7 +38,7 @@ export class HubError extends WavvonError {
   }
 }
 
-/** The challenge could not be answered safely (unknown scheme, wrong length). */
+/** The challenge could not be answered safely (missing or unknown scheme). */
 export class AuthSchemeError extends WavvonError {
   override name = "AuthSchemeError";
 }

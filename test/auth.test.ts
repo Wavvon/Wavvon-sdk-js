@@ -19,14 +19,12 @@ describe("auth challenge signing rules", () => {
     expect(b.slice(25)).toEqual(c32);
   });
 
-  it("signs a raw challenge only at exactly 32 bytes when no scheme is named", () => {
-    expect(authChallengeSigningBytes(c32)).toEqual(c32);
-    expect(authChallengeSigningBytes(c32, null)).toEqual(c32);
-    expect(() => authChallengeSigningBytes(new Uint8Array(31))).toThrow(AuthSchemeError);
-    expect(() => authChallengeSigningBytes(new Uint8Array(64))).toThrow(AuthSchemeError);
+  it("refuses a missing scheme instead of signing the raw challenge", () => {
+    expect(() => authChallengeSigningBytes(c32)).toThrow(AuthSchemeError);
+    expect(() => authChallengeSigningBytes(c32, null)).toThrow(AuthSchemeError);
   });
 
-  it("refuses an unknown scheme instead of falling back to raw", () => {
+  it("refuses an unknown scheme", () => {
     expect(() => authChallengeSigningBytes(c32, "tagged-v2")).toThrow(AuthSchemeError);
     expect(() => authChallengeSigningBytes(c32, "")).toThrow(AuthSchemeError);
   });
@@ -83,6 +81,14 @@ describe("authenticate", () => {
       constructor: HubError,
       status: 403,
     });
+  });
+
+  it("refuses a hub that names no scheme without calling verify", async () => {
+    const hub = fakeHub();
+    await expect(authenticate("http://hub", identityFromSeed(seed), { fetch: hub.fetchImpl })).rejects.toBeInstanceOf(
+      AuthSchemeError,
+    );
+    expect(hub.seen.verify.length).toBe(0);
   });
 
   it("never sends the seed", async () => {

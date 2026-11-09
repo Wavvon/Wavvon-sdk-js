@@ -1,5 +1,6 @@
 export {
   AUTH_CHALLENGE_SCHEME,
+  BOUND_AUTH_CHALLENGE_SCHEME,
   authChallengeSigningBytes,
   authenticate,
   identityFromSeed,

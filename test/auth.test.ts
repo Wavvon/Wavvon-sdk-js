@@ -11,6 +11,7 @@ import {
 
 const seed = "5a".repeat(32);
 const c32 = new Uint8Array(32).fill(9);
+const HUB_KEY = "cd".repeat(32);
 
 describe("auth challenge signing rules", () => {
   it("prefixes the tag under tagged-v1", () => {
@@ -25,8 +26,20 @@ describe("auth challenge signing rules", () => {
   });
 
   it("refuses an unknown scheme", () => {
-    expect(() => authChallengeSigningBytes(c32, "tagged-v2")).toThrow(AuthSchemeError);
+    expect(() => authChallengeSigningBytes(c32, "tagged-v3")).toThrow(AuthSchemeError);
     expect(() => authChallengeSigningBytes(c32, "")).toThrow(AuthSchemeError);
+  });
+
+  it("binds the server key under tagged-v2", () => {
+    const b = authChallengeSigningBytes(c32, "tagged-v2", "ab");
+    expect(b.slice(0, 25)).toEqual(utf8("wavvon/auth-challenge/v2\0"));
+    expect(b.slice(25, 31)).toEqual(new Uint8Array([2, 0, 0, 0, 0x61, 0x62]));
+    expect(b.slice(31)).toEqual(c32);
+  });
+
+  it("refuses a challenge that is not 32 bytes", () => {
+    expect(() => authChallengeSigningBytes(new Uint8Array(31), "tagged-v1")).toThrow(AuthSchemeError);
+    expect(() => authChallengeSigningBytes(new Uint8Array(33), "tagged-v2", "ab")).toThrow(AuthSchemeError);
   });
 
   it("accepts a seed as hex or bytes and rejects other lengths", () => {
@@ -41,6 +54,7 @@ function fakeHub(opts: { scheme?: string; failVerify?: number; verifyStatus?: nu
   const seen: { verify: Record<string, unknown>[] } = { verify: [] };
   let failVerify = opts.failVerify ?? 0;
   const fetchImpl = (async (url: string, init: RequestInit) => {
+    if (url.endsWith("/info")) return Response.json({ public_key: HUB_KEY });
     const body = JSON.parse(init.body as string);
     if (url.endsWith("/auth/challenge")) {
       const ch = bytesToHex(new Uint8Array(32).fill(challenges.length + 1));
@@ -50,7 +64,7 @@ function fakeHub(opts: { scheme?: string; failVerify?: number; verifyStatus?: nu
     seen.verify.push(body);
     if (failVerify-- > 0) return new Response("busy", { status: 503 });
     if (opts.verifyStatus) return new Response("This hub requires an invite code", { status: opts.verifyStatus });
-    const msg = authChallengeSigningBytes(hexToBytes(body.challenge), opts.scheme);
+    const msg = authChallengeSigningBytes(hexToBytes(body.challenge), opts.scheme, HUB_KEY);
     const okSig = ed25519.verify(hexToBytes(body.signature), msg, hexToBytes(body.public_key));
     if (!okSig) return new Response("Invalid signature", { status: 401 });
     return Response.json({ token: "tok", scope: "member", canonical_pubkey: body.public_key });
@@ -61,6 +75,12 @@ function fakeHub(opts: { scheme?: string; failVerify?: number; verifyStatus?: nu
 const fast = { baseDelayMs: 1, maxDelayMs: 1 };
 
 describe("authenticate", () => {
+  it("logs in with tagged-v2, signing for the key /info presented", async () => {
+    const hub = fakeHub({ scheme: "tagged-v2" });
+    const s = await authenticate("http://hub/", identityFromSeed(seed), { fetch: hub.fetchImpl });
+    expect(s.token).toBe("tok");
+  });
+
   it("logs in with tagged-v1 and passes the invite", async () => {
     const hub = fakeHub({ scheme: "tagged-v1" });
     const s = await authenticate("http://hub/", identityFromSeed(seed), { fetch: hub.fetchImpl, inviteCode: "inv" });

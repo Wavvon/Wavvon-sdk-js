@@ -73,6 +73,13 @@ describe.runIf(present)("tier-1 conformance (wire-vectors.json)", () => {
     expect(bytesToHex(identityFromSeed(v.inputs.signer_seed).sign(bytes))).toBe(v.signature);
   });
 
+  it("bound_auth_challenge: tagged-v2 signing bytes and signature", () => {
+    const v = vector("bound_auth_challenge");
+    const bytes = authChallengeSigningBytes(hexToBytes(v.inputs.challenge), "tagged-v2", v.inputs.server_pubkey);
+    expect(bytesToHex(bytes)).toBe(v.signing_bytes);
+    expect(bytesToHex(identityFromSeed(v.inputs.signer_seed).sign(bytes))).toBe(v.signature);
+  });
+
   it("webhook_delivery_hub: Ed25519 dispatch signature verifies", () => {
     const v = vector("webhook_delivery_hub");
     const body = utf8(v.inputs.body);

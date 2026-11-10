@@ -169,7 +169,16 @@ export class WavvonClient {
       {
         url: async () => {
           const { token } = await this.login();
-          return `${this.hubUrl.replace(/^http/, "ws")}/ws?token=${encodeURIComponent(token)}`;
+          const base = `${this.hubUrl.replace(/^http/, "ws")}/ws`;
+          // A single-use ticket keeps the session token out of URLs, and so
+          // out of proxy logs. An older hub only takes the token, and a ticket
+          // request that fails falls back to it: the socket then answers 401
+          // and the stream re-authenticates as before.
+          if (await this.hasCapability("ws.ticket")) {
+            const { data } = await this.rest.POST("/ws/ticket");
+            if (data) return `${base}?ticket=${encodeURIComponent(data.ticket)}`;
+          }
+          return `${base}?token=${encodeURIComponent(token)}`;
         },
         reauthenticate: async () => {
           await this.relogin(this.session?.token);

@@ -49,9 +49,12 @@
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.2",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.12"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "overrides": {
+    "minimatch@>=7 <11.0.1": "^11.0.1"
   }
 }

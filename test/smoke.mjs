@@ -7,8 +7,8 @@
 //   WAVVON_SMOKE_WEBHOOK_HOST  host the hub can reach this process at (default localhost)
 //
 // Authenticates as a fresh identity, posts a message, registers a slash
-// command, invokes it, and checks that the verified invocation's reply lands
-// in the channel. scripts/smoke-local.mjs boots a hub and runs this.
+// command, invokes it, checks that the verified invocation's reply lands
+// in the channel, and polls the message back from GET /me/events. scripts/smoke-local.mjs boots a hub and runs this.
 
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
@@ -77,6 +77,7 @@ try {
     channelId = channels.find((c) => !c.is_category && (c.channel_type ?? "text") === "text")?.id;
     if (!channelId) fail("no text channel to post in");
   }
+  await client.setAppSubscriptions([{ event: "message.created", channels: [channelId] }]);
 
   const waitFor = (pred, what) =>
     within(
@@ -103,6 +104,13 @@ try {
   if (invocation?.command !== "sdksmoke" || invocation.args_raw !== "ping") fail(`odd invocation ${JSON.stringify(invocation)}`);
   if (reply.sender !== session.canonicalPubkey) fail(`reply sent by ${reply.sender}`);
   step("verified the invocation and the reply landed");
+
+  const polled = await client.pollEvents();
+  const ours = polled.find((e) => e.event === "message.created" && e.payload?.content === text);
+  if (!ours) fail(`polling did not return our message: ${JSON.stringify(polled.map((e) => e.event))}`);
+  const after = await client.pollEvents(polled.at(-1).seq);
+  if (after.some((e) => e.seq <= polled.at(-1).seq)) fail("the cursor did not page forward");
+  step(`polled ${polled.length} events, ours at seq ${ours.seq}`);
 
   if (unknown.length) step(`frames this SDK does not model (delivered as unknown): ${[...new Set(unknown)].join(", ")}`);
   stream.close();

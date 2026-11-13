@@ -142,8 +142,6 @@ function header(headers: HeaderBag, name: string): string | undefined {
 function signedTimestamp(headers: HeaderBag, opts: VerifyOptions): { ts: bigint; sig: Uint8Array } {
   const sigHex = header(headers, "X-Wavvon-Signature-V1");
   const tsText = header(headers, "X-Wavvon-Timestamp");
-  // The body-only X-Wavvon-Signature is deliberately not accepted: on its own
-  // a captured request replays forever.
   if (!sigHex || !tsText) {
     throw new WebhookVerificationError("missing X-Wavvon-Signature-V1 or X-Wavvon-Timestamp");
   }

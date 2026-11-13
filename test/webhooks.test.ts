@@ -47,9 +47,9 @@ describe("verifyDispatch", () => {
     expect(() => verifyDispatch(h, slash.replace("echo", "ban"), hubPub, { now })).toThrow(WebhookVerificationError);
     expect(() => verifyDispatch(h, slash, hubPub, { now: now + 301 })).toThrow(WebhookVerificationError);
     expect(verifyDispatch(h, slash, hubPub, { now: now + 300 }).type).toBe("slash_command");
-    const legacyOnly: Record<string, string> = { ...h };
-    delete legacyOnly["X-Wavvon-Signature-V1"];
-    expect(() => verifyDispatch(legacyOnly, slash, hubPub, { now })).toThrow(WebhookVerificationError);
+    const noV1: Record<string, string> = { ...h };
+    delete noV1["X-Wavvon-Signature-V1"];
+    expect(() => verifyDispatch(noV1, slash, hubPub, { now })).toThrow(WebhookVerificationError);
     const other = bytesToHex(ed25519.getPublicKey(new Uint8Array(32).fill(6)));
     expect(() => verifyDispatch(h, slash, other, { now })).toThrow(WebhookVerificationError);
   });

@@ -61,7 +61,7 @@ A fuller one is [examples/echo-bot.mjs](examples/echo-bot.mjs).
 | Capability checks | `client.hasCapability`, `client.requireCapability` |
 | Keyset paging to the end of a list | `paginate` |
 | WebSocket events with resume after reconnect | `client.connect()` -> `EventStream` |
-| HTTP polling instead of a socket | `client.pollEvents`, `client.ackEvents` |
+| HTTP polling instead of a socket | `client.pollEvents(cursor)` |
 | App registration | `setAppProfile`, `setAppCommands`, `setAppSubscriptions` |
 | Slash command and button webhooks | `createDispatchHandler`, `verifyDispatch` |
 | Outgoing webhook receiver | `verifyOutgoingWebhook` |
@@ -105,7 +105,7 @@ Login, REST, the socket and polling need no capability.
 Every signed byte sequence is checked against the shared wire vectors in
 Wavvon-server (`crates/identity/wire-vectors.json`): the auth challenge, the
 Ed25519 dispatch signature, and the outgoing-webhook HKDF + HMAC. CI reads them
-from Wavvon-server at commit `eb11d75657ee8362dd42a7982fc5b13a3dcc4e68`, a pin
+from Wavvon-server at commit `78ff4aab3ba905ef4480d02d47f24d63762cc697`, a pin
 moved on purpose when the vectors change.
 
 The REST types were generated from Wavvon-docs at the commit in

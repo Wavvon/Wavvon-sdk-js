@@ -1,6 +1,6 @@
 export {
-  AUTH_CHALLENGE_LEN,
   AUTH_CHALLENGE_SCHEME,
+  BOUND_AUTH_CHALLENGE_SCHEME,
   authChallengeSigningBytes,
   authenticate,
   identityFromSeed,
@@ -15,7 +15,6 @@ export {
   type AppProfile,
   type AppSubscription,
   type HubInfo,
-  type PolledEvent,
   type SessionState,
   type WavvonClientOptions,
 } from "./client.js";
@@ -23,6 +22,7 @@ export {
   AuthSchemeError,
   HubError,
   HubUnavailableError,
+  ReplayUnavailableError,
   UnsupportedByHubError,
   WavvonError,
   WebhookVerificationError,

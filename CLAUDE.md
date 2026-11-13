@@ -52,9 +52,13 @@ GitHub Actions workflow files: explain choices in the commit message.
 - **Unknown is loud.** Unknown socket frames and dispatch types are delivered
   as an `unknown` variant with the raw payload, never dropped.
 - **Re-auth on its own**, with the state observable (`onStateChange`).
-- **Auth challenge**: `scheme: "tagged-v1"` -> sign
-  `"wavvon/auth-challenge/v1\0" || challenge`; no scheme -> raw only at exactly
-  32 bytes; unknown scheme -> error.
+- **Auth challenge**: `scheme: "tagged-v2"` -> sign
+  `"wavvon/auth-challenge/v2\0" || u32le(len) || server_pubkey || challenge`,
+  where `server_pubkey` is the hub's own `GET /info` `public_key`, never a key
+  from the challenge response (Wavvon-server#294). `"tagged-v1"` (older hubs)
+  -> sign `"wavvon/auth-challenge/v1\0" || challenge`. A missing or any other
+  scheme -> `AuthSchemeError`, never a raw signature. The challenge is exactly
+  32 bytes.
 - **Never send the seed** or any private key anywhere. Never invent a wire
   format: signed bytes come from wire-format.md and the vectors; a new one is
   a server-side change first. Never model a bot as an account or send
@@ -73,7 +77,7 @@ report the doc bug to Wavvon-docs.
   hub, not the app.
 - Paging: a bare array plus `limit` (default 100, max 500) and `cursor` = key
   of the previous page's last row; the key differs per endpoint (`code`,
-  `public_key`, `id`). Channel messages still page with `before`.
+  `public_key`, `id`); channel messages too since Wavvon-server#184.
 - Outgoing-webhook HKDF input is the **decoded** secret bytes (the admin sees
   base64url without padding); the HMAC key is the 32 HKDF bytes, not hex.
 

@@ -1,5 +1,10 @@
 # @wavvon/sdk
 
+[![npm](https://img.shields.io/npm/v/@wavvon/sdk)](https://www.npmjs.com/package/@wavvon/sdk)
+[![CI](https://github.com/Wavvon/Wavvon-sdk-js/actions/workflows/ci.yml/badge.svg)](https://github.com/Wavvon/Wavvon-sdk-js/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](package.json)
+
 Write programs that talk to a [Wavvon](https://github.com/Wavvon) hub: bots,
 apps with slash commands and buttons, event consumers, mini-app hosts, and
 receivers for outgoing webhooks.

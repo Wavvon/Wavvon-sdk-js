@@ -28,6 +28,15 @@ export {
   WebhookVerificationError,
 } from "./errors.js";
 export {
+  DirectoryError,
+  buildIdentityListing,
+  publishListing,
+  unpublishListing,
+  type DirectoryOptions,
+  type IdentityListing,
+  type ListingContact,
+} from "./directory.js";
+export {
   EventStream,
   parseFrame,
   type ClientMessage,

@@ -70,7 +70,40 @@ A fuller one is [examples/echo-bot.mjs](examples/echo-bot.mjs).
 | App registration | `setAppProfile`, `setAppCommands`, `setAppSubscriptions` |
 | Slash command and button webhooks | `createDispatchHandler`, `verifyDispatch` |
 | Outgoing webhook receiver | `verifyOutgoingWebhook` |
+| Invite-directory listing (find me and invite me) | `publishListing`, `unpublishListing` |
 | Mini-app host | `EventStream.announceApp`, `dismissApp`, `sendMiniAppMessage` |
+
+## Listing a program in the directory
+
+A Wavvon directory keeps an invite directory: signed `wavvon.identity`
+listings of people and programs that want to be found and invited
+([invite-directory.md](https://github.com/Wavvon/Wavvon-docs/blob/main/docs/invite-directory.md)).
+`publishListing` builds the document with `pubkey` from your identity,
+signs its exact bytes and posts it; `unpublishListing` sends the signed
+delete. The seed never leaves the process.
+
+```js
+import { identityFromSeed, publishListing, unpublishListing } from "@wavvon/sdk";
+
+const identity = identityFromSeed(process.env.WAVVON_SEED);
+const url = await publishListing(identity, {
+  name: "Echo",
+  tagline: "Repeats what you say",
+  tags: ["utility"],
+  languages: ["en"],
+  contact: { home_hub: "https://hub.example" },   // or { endpoint: "https://bot.example/invites" }
+  app: { commands: [{ name: "echo", description: "Repeat after me" }] },
+}, { directory: "https://directory.example" });
+
+await unpublishListing(identity, { directory: "https://directory.example" });
+```
+
+`contact` must name exactly one route; the SDK refuses anything else before
+sending. `kind` defaults to `"program"` and `listedAt` to now: the
+directory keeps only the newest listing per key. A refusal (bad field, wrong
+signature, an older `listedAt`) throws `DirectoryError` with the reason the
+directory gave; 429 and 5xx are retried like hub calls. See
+[examples/publish-listing.mjs](examples/publish-listing.mjs).
 
 ## Capabilities each feature needs
 

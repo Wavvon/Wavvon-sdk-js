@@ -33,7 +33,8 @@ GitHub Actions workflow files: explain choices in the commit message.
      retries and re-authenticates on 401), capabilities, app registration,
      polling; `pager.ts`; `events.ts` the WebSocket stream and frame types;
      `webhooks.ts` dispatch and outgoing-webhook verification, reply types and
-     the Request -> Response handler.
+     the Request -> Response handler; `directory.ts` signed listings for a
+     Wavvon directory (the same bytes the Wavvon clients build).
 3. **Conformance** - `test/conformance.test.ts` reads Wavvon-server
    `crates/identity/wire-vectors.json` (default path `../../server/...`, or
    `WAVVON_WIRE_VECTORS`). Strings starting with `@` refer to `fixtures`. It

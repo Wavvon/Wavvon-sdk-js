@@ -1,5 +1,6 @@
+import { sha256 } from "@noble/hashes/sha2.js";
 import type { Identity } from "./auth.js";
-import { utf8 } from "./bytes.js";
+import { bytesToHex, utf8 } from "./bytes.js";
 import { WavvonError } from "./errors.js";
 import { fetchWithRetry, type RetryOptions } from "./retry.js";
 
@@ -154,4 +155,34 @@ export async function publishListing(identity: Identity, listing: IdentityListin
 /** Removes this identity's listing. Returns false if there was none. */
 export function unpublishListing(identity: Identity, o: DirectoryOptions): Promise<boolean> {
   return deleteSignedListing("identities", identity.publicKey, identity, o);
+}
+
+/**
+ * The exact bytes of a `.wavvonclient` listing: the document as written, with
+ * `author_pubkey` set to the signing key. The directory keys a client listing
+ * by the SHA-256 of these bytes, so the same file always gives the same id.
+ */
+export function buildClientListing(doc: Record<string, unknown>, publicKeyHex: string): string {
+  if (doc.format !== "wavvon.client") throw new TypeError('a client listing has format "wavvon.client"');
+  return JSON.stringify({ ...doc, author_pubkey: `ed25519:${publicKeyHex}` });
+}
+
+/** Publishes a `.wavvonclient` listing signed with `identity`. Returns the listing's page URL. */
+export async function publishClientListing(
+  identity: Identity,
+  doc: Record<string, unknown>,
+  o: DirectoryOptions,
+): Promise<string> {
+  const { id } = await postSignedListing("clients", buildClientListing(doc, identity.publicKey), identity, o);
+  return `${base(o)}/clients/${String(id)}`;
+}
+
+/** Removes the client listing published from `doc`. Returns false if there was none. */
+export function unpublishClientListing(
+  identity: Identity,
+  doc: Record<string, unknown>,
+  o: DirectoryOptions,
+): Promise<boolean> {
+  const payload = buildClientListing(doc, identity.publicKey);
+  return deleteSignedListing("clients", bytesToHex(sha256(utf8(payload))), identity, o);
 }

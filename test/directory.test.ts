@@ -1,6 +1,7 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { DirectoryError, buildIdentityListing, identityFromSeed, publishListing, unpublishListing } from "../src/index.js";
+import { DirectoryError, buildClientListing, buildIdentityListing, identityFromSeed, publishListing, unpublishClientListing, unpublishListing } from "../src/index.js";
 
 const id = identityFromSeed("11".repeat(32));
 const fromB64url = (s: string) => Uint8Array.from(Buffer.from(s, "base64url"));
@@ -78,5 +79,21 @@ describe("identity listing", () => {
   it("reports a missing listing as false", async () => {
     const { fetch } = fakeFetch([new Response(null, { status: 404 })]);
     expect(await unpublishListing(id, { directory: "https://d", fetch })).toBe(false);
+  });
+});
+
+describe("client listing", () => {
+  const doc = { format: "wavvon.client", version: 1, name: "Tiny", author_pubkey: "ed25519:00" };
+
+  it("signs the document as written, with the key as author", () => {
+    expect(JSON.parse(buildClientListing(doc, id.publicKey)).author_pubkey).toBe(`ed25519:${id.publicKey}`);
+    expect(() => buildClientListing({ format: "wavvon.identity" }, id.publicKey)).toThrow(TypeError);
+  });
+
+  it("removes the listing by the content hash of those bytes", async () => {
+    const { calls, fetch } = fakeFetch([Response.json({ listed_at: "2026-11-17T00:00:00.000Z" }), Response.json({ ok: true })]);
+    expect(await unpublishClientListing(id, doc, { directory: "https://d", fetch })).toBe(true);
+    const hash = createHash("sha256").update(buildClientListing(doc, id.publicKey)).digest("hex");
+    expect(calls[1]!.url).toBe(`https://d/api/clients/${hash}`);
   });
 });

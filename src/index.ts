@@ -29,8 +29,11 @@ export {
 } from "./errors.js";
 export {
   DirectoryError,
+  buildClientListing,
   buildIdentityListing,
+  publishClientListing,
   publishListing,
+  unpublishClientListing,
   unpublishListing,
   type DirectoryOptions,
   type IdentityListing,

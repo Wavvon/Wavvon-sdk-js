@@ -102,8 +102,10 @@ Work on `develop`; `main` is for releases. Commit in logical steps.
 
 Bump `version` in `package.json` on `develop`, open a PR from `develop` to
 `main`; a maintainer merges it. `.github/workflows/release.yml` then runs on
-`main`: if tag `v<version>` does not exist yet it runs the full check,
-**stages** the version on npm with provenance through npm trusted publishing
+`main`: if tag `v<version>` does not exist yet a `build` job with no
+credentials runs the full check and packs the tarball; a separate `publish`
+job, the only one holding `id-token: write`, downloads that tarball and
+**stages** it on npm with provenance through npm trusted publishing
 (no token stored; the trusted publisher on the package settings page may only
 `npm stage publish`), tags the commit and creates the GitHub release. The
 version goes live only when a maintainer approves it on npmjs.com (Staged

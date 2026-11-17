@@ -18,7 +18,7 @@ export interface HubEvent {
   hub_url: string;
   at: number;
   payload: Record<string, unknown>;
-  /** Replay only, and only when the audit row has them. */
+  /** Present on live pushes, webhooks and replay alike, when the event has them; absent, never null, otherwise. */
   actor_pubkey?: string;
   target_pubkey?: string;
   channel_id?: string;

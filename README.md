@@ -71,6 +71,7 @@ A fuller one is [examples/echo-bot.mjs](examples/echo-bot.mjs).
 | Slash command and button webhooks | `createDispatchHandler`, `verifyDispatch` |
 | Outgoing webhook receiver | `verifyOutgoingWebhook` |
 | Invite-directory listing (find me and invite me) | `publishListing`, `unpublishListing` |
+| Client listing, and a `wavvon publish` command | `publishClientListing`, `unpublishClientListing`, `npx @wavvon/sdk publish` |
 | Mini-app host | `EventStream.announceApp`, `dismissApp`, `sendMiniAppMessage` |
 
 ## Listing a program in the directory
@@ -104,6 +105,39 @@ directory keeps only the newest listing per key. A refusal (bad field, wrong
 signature, an older `listedAt`) throws `DirectoryError` with the reason the
 directory gave; 429 and 5xx are retried like hub calls. See
 [examples/publish-listing.mjs](examples/publish-listing.mjs).
+
+## Publishing from the command line
+
+The package carries a `wavvon` command that publishes a listing file without
+any code: a `.wavvonclient` (`"format": "wavvon.client"`) for a client, or
+a `wavvon.identity` listing for a person or program.
+
+```sh
+export WAVVON_SEED=<64 hex chars>     # or --seed-file <path>; never an argument
+npx @wavvon/sdk publish my-client.wavvonclient --directory https://directory.example
+npx @wavvon/sdk publish --remove my-client.wavvonclient --directory https://directory.example
+```
+
+It fills `author_pubkey` (or `pubkey`) from the key, signs the exact
+payload bytes, posts them and prints the listing URL; `--remove` sends the
+signed delete. `WAVVON_DIRECTORY` can stand in for `--directory`. A
+refusal is printed as the directory wrote it. A client listing is identified
+by the hash of its bytes, so remove it with the same file you published. A
+minimal `.wavvonclient`:
+
+```json
+{
+  "format": "wavvon.client",
+  "version": 1,
+  "name": "Tiny Client",
+  "tagline": "A minimal Wavvon client",
+  "description": "Text only, for the terminal.",
+  "maintainer": "Your name",
+  "platforms": ["linux"],
+  "languages": ["en"],
+  "features": { "text": { "support": "full" } }
+}
+```
 
 ## Capabilities each feature needs
 

@@ -120,16 +120,20 @@ say(`after B left, A rotated to key_id ${Math.max(...seenB2.frames.map((f) => f.
 // Proximity: ten positions in 100 ms end at the last one.
 va.createZone("smoke-zone", "smoke", "2d", {}, "any_channel_member");
 await until("both to see the zone", () => seenB2.zones.includes("smoke-zone") && va.zones().some((z) => z.zoneId === "smoke-zone"));
+const t0 = Date.now();
 for (let i = 0; i < 10; i++) {
   va.setPosition("smoke-zone", [10 + i, 50]);
   await sleep(10);
 }
+// One update per 50 ms window the loop spanned, plus the first and the final
+// flush; timer slop stretches the loop, and nine keeps it a coalescing test.
+const limit = Math.min(9, Math.ceil((Date.now() - t0) / 50) + 2);
 await until("B to see the last position", () => {
   const last = seenB2.positions.at(-1);
   return last?.[0] === 19 && last?.[1] === 50;
 });
 const n = seenB2.positions.length;
-if (n > 4) throw new Error(`coalescing let ${n} of 10 positions through`);
+if (n > limit) throw new Error(`coalescing let ${n} of 10 positions through (limit ${limit})`);
 say(`ten positions in 100 ms coalesced to ${n}, ending at the last`);
 
 // A position in someone else's creator-only zone is refused, as an event.

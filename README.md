@@ -16,7 +16,8 @@ package implements is
 [sdk.md](https://github.com/Wavvon/Wavvon-docs/blob/main/docs/sdk.md) (tier 1).
 
 - TypeScript, ESM, strict types. Node 20 or later, and browsers.
-- Depends on `@noble/curves`, `@noble/hashes` and `openapi-fetch`. Nothing else.
+- Depends on `@noble/curves`, `@noble/hashes`, `@noble/ciphers` and `openapi-fetch`.
+  Voice also needs `werift` (an optional peer dependency, Node 22+).
 - Apache-2.0, so a closed-source program can use it.
 
 ## Install
@@ -73,6 +74,8 @@ A fuller one is [examples/echo-bot.mjs](examples/echo-bot.mjs).
 | Invite-directory listing (find me and invite me) | `publishListing`, `unpublishListing` |
 | Client listing, and a `wavvon publish` command | `publishClientListing`, `unpublishClientListing`, `npx @wavvon/sdk publish` |
 | Mini-app host | `EventStream.announceApp`, `dismissApp`, `sendMiniAppMessage` |
+| Voice: join a room, send and receive end-to-end encrypted Opus | `client.joinVoice(channelId)` -> `Voice` |
+| DH key publish, verified and pinned peer keys | `publishDhKey`, `peerDhKey`, `acceptDhKey` |
 
 ## Listing a program in the directory
 
@@ -139,6 +142,31 @@ minimal `.wavvonclient`:
 }
 ```
 
+## Voice
+
+```sh
+npm install werift
+```
+
+```ts
+const voice = await client.joinVoice(channelId); // DH publish, join, WebRTC, key offer
+voice.sendOpus(packet);                          // one 20 ms Opus packet, paced to real time
+voice.setPosition(zoneId, [40, 60]);             // proximity rooms: coalesced, >= 50 ms apart
+for await (const ev of voice) {
+  if (ev.type === "audio") ev.opus;              // decrypted, with from, senderId, ts, ctr
+}
+await voice.leave();
+```
+
+The SDK owns key distribution and rotation, pacing, the replay watermark and
+the position rate limit; mute, deafen, moves and a changed DH key are the
+program's to decide (`setMuted`, `setDeafened`, `move_requested`,
+`key_skipped`). Only 20 ms Opus packets are accepted: there is no PCM
+encoder, so bring your own (or pass through an Ogg Opus source). Peer DH keys
+are pinned in memory; pass `dhPins` (anything with `get` and `set`) to keep
+them across restarts. The design is
+[sdk-voice.md](https://github.com/Wavvon/Wavvon-docs/blob/main/docs/sdk-voice.md).
+
 ## Capabilities each feature needs
 
 Hubs say what they support in `GET /info` `capabilities`. The SDK checks those
@@ -152,6 +180,7 @@ advertise throws `UnsupportedByHubError`.
 | Paging `GET /users`, `/conversations/{id}/messages`, `/admin/reports` | `list.cursor` |
 | Paging bans, mutes, invites, pending, conversations, pins, polls | `list.cursor.lists` |
 | `ping` / `pong` over the socket | `ws.ping` |
+| `joinVoice` | `channels.voice` and `voice.webrtc` |
 
 Login, REST, the socket and polling need no capability.
 
@@ -176,7 +205,8 @@ Login, REST, the socket and polling need no capability.
 
 Every signed byte sequence is checked against the shared wire vectors in
 Wavvon-server (`crates/identity/wire-vectors.json`): the auth challenge, the
-Ed25519 dispatch signature, and the outgoing-webhook HKDF + HMAC. CI reads them
+Ed25519 dispatch signature, the outgoing-webhook HKDF + HMAC, the DH key
+record and the voice key wrap and packet seal. CI reads them
 from Wavvon-server at commit `78ff4aab3ba905ef4480d02d47f24d63762cc697`, a pin
 moved on purpose when the vectors change.
 

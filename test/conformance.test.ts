@@ -12,6 +12,12 @@ import { describe, expect, it } from "vitest";
 import { bytesToHex, hexToBytes, utf8 } from "../src/bytes.js";
 import {
   authChallengeSigningBytes,
+  dhKeySigningBytes,
+  verifyDhKeyRecord,
+  voiceKeyUnwrap,
+  voiceKeyWrap,
+  voicePacketOpen,
+  voicePacketSeal,
   identityFromSeed,
   outgoingWebhookSigningKey,
   verifyDispatch,
@@ -116,5 +122,56 @@ describe.runIf(present)("tier-1 conformance (wire-vectors.json)", () => {
     };
     const event = verifyOutgoingWebhook(headers, body, v.inputs.secret_as_shown, { now: v.inputs.timestamp });
     expect(event.type).toBe("hub_event");
+  });
+
+  it("master_dh_pubkey: seed to X25519", () => {
+    const v = vector("master_dh_pubkey");
+    expect(identityFromSeed(v.inputs.seed).dhPublicKey).toBe(v.dh_pubkey);
+  });
+
+  it("dh_key_record: signing bytes, signature, verification", () => {
+    const v = vector("dh_key_record");
+    const bytes = dhKeySigningBytes(v.inputs.pubkey, v.inputs.dh_pubkey);
+    expect(bytesToHex(bytes)).toBe(v.signing_bytes);
+    expect(bytesToHex(identityFromSeed(v.inputs.signer_seed).sign(bytes))).toBe(v.signature);
+    expect(verifyDhKeyRecord(v.inputs.pubkey, v.inputs.dh_pubkey, v.signature)).toBe(true);
+    expect(verifyDhKeyRecord(v.inputs.pubkey, v.inputs.pubkey, v.signature)).toBe(false);
+  });
+
+  it("voice_key_wrap: wrap, and unwrap on the recipient side", () => {
+    const v = vector("voice_key_wrap");
+    const sender = identityFromSeed(v.inputs.sender_seed);
+    const recipient = identityFromSeed(v.inputs.recipient_seed);
+    const ct = voiceKeyWrap(
+      sender.dh!(hexToBytes(recipient.dhPublicKey!)),
+      v.inputs.channel_id,
+      hexToBytes(v.inputs.sender_key),
+      hexToBytes(v.inputs.nonce_salt),
+      v.inputs.key_id,
+      hexToBytes(v.inputs.wrap_nonce),
+    );
+    expect(bytesToHex(ct)).toBe(v.ciphertext);
+    const k = voiceKeyUnwrap(
+      recipient.dh!(hexToBytes(sender.dhPublicKey!)),
+      v.inputs.channel_id,
+      hexToBytes(v.ciphertext),
+      hexToBytes(v.inputs.wrap_nonce),
+    );
+    expect(bytesToHex(k.senderKey)).toBe(v.inputs.sender_key);
+    expect(bytesToHex(k.nonceSalt)).toBe(v.inputs.nonce_salt);
+    expect(k.keyId).toBe(v.inputs.key_id);
+  });
+
+  it.each(["voice_packet_ctr0", "voice_packet_ctr7"])("%s: seal and open", (name) => {
+    const v = vector(name);
+    const key = hexToBytes(v.inputs.sender_key);
+    const salt = hexToBytes(v.inputs.nonce_salt);
+    const sealed = voicePacketSeal(key, salt, v.inputs.key_id, BigInt(v.inputs.counter), v.inputs.timestamp, hexToBytes(v.inputs.opus));
+    expect(bytesToHex(sealed)).toBe(v.packet);
+    const opened = voicePacketOpen(key, salt, hexToBytes(v.packet));
+    expect(opened).toEqual({ keyId: v.inputs.key_id, ctr: BigInt(v.inputs.counter), ts: v.inputs.timestamp, opus: hexToBytes(v.inputs.opus) });
+    const tampered = hexToBytes(v.packet);
+    tampered[tampered.length - 1]! ^= 1;
+    expect(() => voicePacketOpen(key, salt, tampered)).toThrow();
   });
 });

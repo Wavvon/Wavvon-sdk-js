@@ -109,7 +109,7 @@ export function parseFrame(data: unknown): WsEvent {
   return { type: "unknown", rawType: typeof t === "string" ? t : "", raw: frame };
 }
 
-/** Client -> server frames a tier-1 program sends. */
+/** Client -> server frames a program sends. */
 export type ClientMessage =
   | { type: "subscribe"; channel_id: string }
   | { type: "unsubscribe"; channel_id: string }
@@ -119,7 +119,26 @@ export type ClientMessage =
   | { type: "component_interaction"; message_id: string; custom_id: string; values?: string[] }
   | { type: "app_announce"; channel_id: string; title: string; description: string }
   | { type: "app_dismiss"; channel_id: string }
-  | { type: "mini_app_message"; app_id: string; channel_id: string; payload: string; to_pubkey?: string };
+  | { type: "mini_app_message"; app_id: string; channel_id: string; payload: string; to_pubkey?: string }
+  | { type: "voice_join"; channel_id: string }
+  | { type: "voice_leave"; channel_id: string }
+  | { type: "voice_rtc_offer"; token: string; sdp: string }
+  | { type: "voice_speaking"; channel_id: string; speaking: boolean }
+  | {
+      type: "voice_key_offer";
+      channel_id: string;
+      bundles: { recipient_pubkey: string; ciphertext_hex: string; nonce_hex: string }[];
+    }
+  | { type: "voice_position_update"; zone_id: string; position: number[] }
+  | {
+      type: "voice_zone_create";
+      zone_id: string;
+      name: string;
+      coordinate_system: string;
+      attenuation: Record<string, unknown>;
+      auth_mode: string;
+    }
+  | { type: "voice_zone_destroy"; zone_id: string };
 
 // ---------------------------------------------------------------------------
 // The socket

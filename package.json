@@ -38,9 +38,11 @@
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "smoke": "node test/smoke.mjs",
     "smoke:local": "node scripts/smoke-local.mjs",
+    "smoke:voice": "node test/smoke-voice.mjs",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@noble/ciphers": "^2.4.0",
     "@noble/curves": "^2.4.0",
     "@noble/hashes": "^2.4.0",
     "openapi-fetch": "^0.17.0"
@@ -52,12 +54,21 @@
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.2",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "werift": "0.26.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "overrides": {
     "minimatch@>=7 <11.0.1": "^11.0.1"
+  },
+  "peerDependencies": {
+    "werift": "^0.26.0"
+  },
+  "peerDependenciesMeta": {
+    "werift": {
+      "optional": true
+    }
   }
 }

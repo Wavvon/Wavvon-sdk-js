@@ -19,7 +19,21 @@ export {
   type WavvonClientOptions,
 } from "./client.js";
 export {
+  acceptDhKey,
+  dhKeySigningBytes,
+  fetchDhRecord,
+  peerDhKey,
+  publishDhKey,
+  verifyDhKeyRecord,
+  type DhPinStore,
+} from "./dh.js";
+export {
   AuthSchemeError,
+  DhKeyChangedError,
+  DhKeyUnsignedError,
+  RecipientHasNoKeyError,
+  VoiceError,
+  type VoiceErrorKind,
   HubError,
   HubUnavailableError,
   ReplayUnavailableError,
@@ -84,4 +98,18 @@ export {
   type UnknownDispatch,
   type VerifyOptions,
 } from "./webhooks.js";
+export {
+  Voice,
+  joinVoice,
+  opusDurationUs,
+  voiceKeyUnwrap,
+  voiceKeyWrap,
+  voicePacketOpen,
+  voicePacketSeal,
+  type AudioFrame,
+  type Participant,
+  type VoiceEvent,
+  type Zone,
+} from "./voice.js";
+export { MAX_PACKET as MAX_VOICE_PACKET } from "./voiceTransport.js";
 export type { components, paths } from "./generated/schema.js";

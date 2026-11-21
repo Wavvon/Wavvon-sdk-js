@@ -1,9 +1,11 @@
 import createClient, { type Client } from "openapi-fetch";
+import { acceptDhKey, peerDhKey, publishDhKey, type DhPinStore } from "./dh.js";
 import { authenticate, identityFromSeed, type Identity, type Session } from "./auth.js";
 import { HubError, ReplayUnavailableError, UnsupportedByHubError } from "./errors.js";
 import { EventStream, type EventStreamOptions, type HubEvent, type WebSocketCtor } from "./events.js";
 import type { components, paths } from "./generated/schema.js";
 import { fetchWithRetry, type RetryOptions } from "./retry.js";
+import { joinVoice, type Voice } from "./voice.js";
 
 export type HubInfo = components["schemas"]["HubInfo"];
 type Body<P extends keyof paths, M extends "put"> = paths[P][M] extends {
@@ -28,6 +30,8 @@ export interface WavvonClientOptions {
   fetch?: typeof fetch;
   /** Defaults to globalThis.WebSocket (Node >= 22, browsers). */
   WebSocket?: WebSocketCtor;
+  /** Pinned peer DH keys (voice). Default: in memory, so pins last as long as the process. */
+  dhPins?: DhPinStore;
 }
 
 /**
@@ -45,12 +49,14 @@ export class WavvonClient {
   private infoCache: HubInfo | undefined;
   private _state: SessionState = "signed-out";
   private stateHandlers = new Set<(s: SessionState) => void>();
+  private readonly dhPins: DhPinStore;
 
   constructor(private readonly opts: WavvonClientOptions) {
     this.hubUrl = opts.hubUrl.replace(/\/+$/, "");
     if (opts.identity) this.identity = opts.identity;
     else if (opts.seed !== undefined) this.identity = identityFromSeed(opts.seed);
     else throw new TypeError("WavvonClient needs a seed or an identity");
+    this.dhPins = opts.dhPins ?? new Map<string, string>();
     this.rest = createClient<paths>({ baseUrl: this.hubUrl, fetch: (req) => this.authedFetch(req) });
   }
 
@@ -157,6 +163,40 @@ export class WavvonClient {
   async setAppSubscriptions(subscriptions: AppSubscription[]): Promise<void> {
     await this.requireCapability("apps.register");
     ok(await this.rest.PUT("/me/app/subscriptions", { body: { subscriptions } }));
+  }
+
+  // ---- DH key and voice (sdk-voice.md) ----
+
+  /**
+   * Publishes this program's DH key on this hub. Without it nobody can wrap a
+   * voice key to the program and it cannot unwrap theirs. Returns false when
+   * the hub already held exactly this key.
+   */
+  publishDhKey(): Promise<boolean> {
+    return publishDhKey(this);
+  }
+
+  /**
+   * A peer's verified, pinned X25519 key. The first key seen is pinned; a
+   * different validly signed one throws DhKeyChangedError and is not used. No
+   * key throws RecipientHasNoKeyError; a transient failure is never either.
+   */
+  peerDhKey(pubkey: string): Promise<Uint8Array> {
+    return peerDhKey(this, this.dhPins, pubkey);
+  }
+
+  /** The program checked a changed key and accepts it: re-pins what the hub now holds. */
+  acceptDhKey(pubkey: string): Promise<void> {
+    return acceptDhKey(this, this.dhPins, pubkey);
+  }
+
+  /**
+   * Publishes the DH key, joins the channel's voice room on a socket of its
+   * own and opens the audio session. Needs `channels.voice` and
+   * `voice.webrtc`, and the optional `werift` package on Node.
+   */
+  joinVoice(channelId: string): Promise<Voice> {
+    return joinVoice(this, channelId, this.dhPins);
   }
 
   // ---- events ----

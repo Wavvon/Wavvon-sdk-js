@@ -34,7 +34,10 @@ GitHub Actions workflow files: explain choices in the commit message.
      polling; `pager.ts`; `events.ts` the WebSocket stream and frame types;
      `webhooks.ts` dispatch and outgoing-webhook verification, reply types and
      the Request -> Response handler; `directory.ts` signed listings for a
-     Wavvon directory (the same bytes the Wavvon clients build).
+     Wavvon directory (the same bytes the Wavvon clients build); `dh.ts` the
+     DH key record, publish and the pin store; `voice.ts` the voice room
+     (sdk-voice.md: crypto, keys, pacing, events), `voiceTransport.ts` its
+     only WebRTC code (werift, an optional peer dependency loaded on join).
 3. **Conformance** - `test/conformance.test.ts` reads Wavvon-server
    `crates/identity/wire-vectors.json` (default path `../../server/...`, or
    `WAVVON_WIRE_VECTORS`). Strings starting with `@` refer to `fixtures`. It
@@ -93,6 +96,15 @@ optional `WAVVON_SMOKE_CHANNEL`). `scripts/smoke-local.mjs` boots a hub binary
 channel as owner, and runs the smoke. In-process tests have missed every
 cross-process bug this project has had: run it when touching auth, the
 socket or webhooks.
+
+`test/smoke-voice.mjs` (`npm run smoke:voice`) needs a running hub whose
+owner is `WAVVON_SMOKE_SEED` (default `5a` x 32). Two identities share a
+room and must open each other's frames byte for byte, then key rotation,
+position coalescing and a refused position. Two lessons it carries from the
+other SDKs: keep every event that arrives while waiting for
+`voice_rtc_answer` (a dropped `voice_key_received` leaves that speaker
+unreadable), and send the offer only after ICE gathering is complete (the
+hub takes no trickle).
 
 ## Git
 
